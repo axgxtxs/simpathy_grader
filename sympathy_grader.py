@@ -5,15 +5,15 @@ NUM_QUESTIONS = 45
 
 # 공통 정답 (1~34번)
 shared_answers = [
-    1, 3, 2, 4, 2, 1, 2, 4, 1, 2,
-    3, 4, 1, 2, 3, 4, 1, 2, 3, 4,
-    1, 2, 3, 4, 1, 2, 3, 4, 1, 2,
-    3, 4, 1, 2
+    2, 4, 4, 2, 3, 3, 2, 5, 1, 5,
+    4, 5, 3, 2, 1, 1, 5, 4, 2, 5,
+    1, 1, 3, 4, 5, 1, 4, 1, 1, 4,
+    1, 1, 5, 2
 ]
 # 화작/언매 Tail
-hwajak_tail = [3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1]
-eonmae_tail = [4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2]
-
+hwajak_tail = [3, 5, 4, 2, 5, 3, 1, 3, 2, 2, 4]
+eonmae_tail = [2, 4, 4, 3, 5, 1, 4, 3, 5, 3, 3]
+               
 # 문항별 오답 개수 계산
 def get_wrong_count(user_part, correct_part):
     return sum(1 for u, c in zip(user_part, correct_part) if u != c)

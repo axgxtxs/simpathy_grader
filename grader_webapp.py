@@ -25,7 +25,7 @@ user_input = st.text_input("답안을 45개 입력하세요 (예: 1234512345...)
 if version == '화작':
     correct_answers = shared_answers + hwajak_tail
 else:
-    correct_answers = shared_answers + neonmae_tail
+    correct_answers = shared_answers + eonmae_tail
 
 if user_input:
     digits = re.findall(r'[1-5]', user_input)

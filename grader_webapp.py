@@ -19,7 +19,7 @@ def get_wrong_count(user_part, correct_part):
     return sum(1 for u, c in zip(user_part, correct_part) if u != c)
 
 # Streamlit UI
-st.title("📘 수능 국어 채점기")
+st.title("공감연구소 모의평가 채점기")
 version = st.radio("시험 유형을 선택하세요:", options=["화작", "언매"])
 user_input = st.text_input("답안을 45개 입력하세요. 숫자 45자리만 인식하므로, 공백, 쉼표, 슬래시 등을 입력하셔도 됩니다.")
 

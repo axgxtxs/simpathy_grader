@@ -5,41 +5,44 @@ NUM_QUESTIONS = 45
 
 # 공통 정답 (1~34번)
 shared_answers = [
-    2, 4, 4, 2, 3, 3, 1, 5, 1, 5,
-    4, 5, 3, 2, 1, 1, 5, 4, 2, 5,
-    1, 1, 3, 4, 5, 1, 4, 1, 1, 4,
-    1, 1, 5, 2
+    1, 3, 2, 4, 2, 1, 2, 4, 1, 2,
+    3, 4, 1, 2, 3, 4, 1, 2, 3, 4,
+    1, 2, 3, 4, 1, 2, 3, 4, 1, 2,
+    3, 4, 1, 2
 ]
+# 화작/언매 Tail
+hwajak_tail = [3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1]
+eonmae_tail = [4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2]
 
-hwajak_tail = [3, 5, 4, 2, 5, 3, 1, 3, 2, 2, 4]
-eonmae_tail = [2, 4, 4, 3, 5, 1, 4, 3, 5, 3, 3]
-
+# 문항별 오답 개수 계산
 def get_wrong_count(user_part, correct_part):
     return sum(1 for u, c in zip(user_part, correct_part) if u != c)
 
-st.title("📘 공감연구소 시험 채점기 (2025 3모)")
-
+# Streamlit UI
+st.title("📘 수능 국어 채점기")
 version = st.radio("시험 유형을 선택하세요:", options=["화작", "언매"])
 user_input = st.text_input("답안을 45개 입력하세요 (예: 1234512345...)")
 
+# 버전에 따른 전체 정답 구성
 if version == '화작':
     correct_answers = shared_answers + hwajak_tail
 else:
-    correct_answers = shared_answers + eonmae_tail
+    correct_answers = shared_answers + eonmae_tail  # 언매 꼬리 연결
 
 if user_input:
     digits = re.findall(r'[1-5]', user_input)
     if len(digits) != NUM_QUESTIONS:
-        st.error(f"⚠️ 입력된 숫자 개수는 {len(digits)}개입니다. 정확히 45개를 입력해주세요.")
+        st.error(f"⚠️ 입력된 숫자 개수는 {len(digits)}개입니다. 정확히 {NUM_QUESTIONS}개를 입력해주세요.")
     else:
         user_answers = [int(d) for d in digits]
-        mode = st.selectbox("채점 방식 선택", [
-            "1. 전체 오답 여부만 확인",
-            "2. 과목별 오답 여부 확인",
-            "3. 지문별 오답 여부 확인",
-            "4. 정답 전체 확인"
-        ])
-
+        mode = st.selectbox(
+            "채점 방식 선택", [
+                "1. 전체 오답 여부만 확인",
+                "2. 과목별 오답 여부 확인",
+                "3. 지문별 오답 여부 확인",
+                "4. 정답 전체 확인"
+            ]
+        )
         show_wrong_count = st.checkbox("오답 개수 보기", value=False)
 
         if mode.startswith("1"):
@@ -65,7 +68,8 @@ if user_input:
                     continue
                 if version == '언매' and subject == '화작':
                     continue
-                u, c = [user_answers[i] for i in idx], [correct_answers[i] for i in idx]
+                u = [user_answers[i] for i in idx]
+                c = [correct_answers[i] for i in idx]
                 if u == c:
                     st.success(f"✅ {subject}: 모든 문항 정답")
                 else:
@@ -90,7 +94,8 @@ if user_input:
             }
             for section in [reading, literature]:
                 for name, idx in section.items():
-                    u, c = [user_answers[i] for i in idx], [correct_answers[i] for i in idx]
+                    u = [user_answers[i] for i in idx]
+                    c = [correct_answers[i] for i in idx]
                     if u == c:
                         st.success(f"✅ {name}: 모든 문항 정답")
                     else:

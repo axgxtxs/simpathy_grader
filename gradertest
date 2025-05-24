@@ -1,0 +1,108 @@
+import re
+
+NUM_QUESTIONS = 45
+
+# 공통 정답 (1~34번)
+shared_answers = [
+    1, 3, 2, 4, 2, 1, 3, 4, 1, 2,
+    3, 4, 1, 2, 3, 4, 1, 2, 3, 4,
+    1, 2, 3, 4, 1, 2, 3, 4, 1, 2,
+    3, 4, 1, 2
+]
+
+# 선택과목 정답 
+hwajak_tail = [3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1]
+eonmae_tail = [4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2]  
+
+def get_wrong_count(user_part, correct_part):
+    return sum(1 for u, c in zip(user_part, correct_part) if u != c)
+
+def grade_by_mode(user_answers, correct_answers, version, mode, show_wrong_count):
+    if mode == 1:
+        if user_answers == correct_answers:
+            print("\n✅ 모든 문항의 정답이 맞습니다!")
+        else:
+            print("\n❌ 오답이 포함되어 있습니다." if not show_wrong_count else f"\n❌ 오답이 포함되어 있습니다. (총 {get_wrong_count(user_answers, correct_answers)}문항 오답)")
+    
+    elif mode == 2:
+        print("\n📊 과목별 오답 여부:")
+        sections = {
+            "독서": range(0, 17),
+            "문학": range(17, 34),
+            "화작": range(34, 45),
+            "언매": range(34, 45)
+        }
+        for subject, idx in sections.items():
+            if version == '화작' and subject == '언매':
+                continue
+            if version == '언매' and subject == '화작':
+                continue
+            u, c = [user_answers[i] for i in idx], [correct_answers[i] for i in idx]
+            if u == c:
+                print(f"✅ {subject}: 모든 문항 정답")
+            else:
+                msg = f"❌ {subject}: 오답이 포함되어 있음"
+                if show_wrong_count:
+                    msg += f" ({get_wrong_count(u, c)}문항 오답)"
+                print(msg)
+
+    elif mode == 3:
+        print("\n📊 지문별 오답 여부 (예시 범위):")
+        reading = {
+            "독서 지문 1": range(0, 5),
+            "독서 지문 2": range(5, 9),
+            "독서 지문 3": range(9, 13),
+            "독서 지문 4": range(13, 17)
+        }
+        literature = {
+            "문학 지문 1": range(17, 22),
+            "문학 지문 2": range(22, 26),
+            "문학 지문 3": range(26, 30),
+            "문학 지문 4": range(30, 34)
+        }
+        for section in [reading, literature]:
+            for name, idx in section.items():
+                u, c = [user_answers[i] for i in idx], [correct_answers[i] for i in idx]
+                if u == c:
+                    print(f"✅ {name}: 모든 문항 정답")
+                else:
+                    msg = f"❌ {name}: 오답이 포함되어 있음"
+                    if show_wrong_count:
+                        msg += f" ({get_wrong_count(u, c)}문항 오답)"
+                    print(msg)
+
+    elif mode == 4:
+        print("\n📄 정답 확인표")
+        for i in range(NUM_QUESTIONS):
+            mark = "✅" if user_answers[i] == correct_answers[i] else "❌"
+            print(f"{i+1:2}번: 정답={correct_answers[i]}, 내답={user_answers[i]} {mark}")
+
+def main():
+    version = input("시험 유형을 입력하세요 (화작 / 언매): ").strip()
+    correct_answers = shared_answers + (hwajak_tail if version == '화작' else eonmae_tail)
+
+    user_input = input("답안 입력 (예: 12345 12345...): ")
+    digits = re.findall(r'[1-5]', user_input)
+    if len(digits) != NUM_QUESTIONS:
+        print(f"⚠️ 입력된 숫자 개수는 {len(digits)}개입니다. 정확히 45개를 입력해주세요.")
+        return
+    user_answers = [int(d) for d in digits]
+
+    while True:
+        print("\n채점 방식 선택:")
+        print("1: 전체 오답 여부만 확인")
+        print("2: 과목별 오답 여부 확인")
+        print("3: 지문별 오답 여부 확인")
+        print("4: 정답 전체 확인")
+        try:
+            mode = int(input("선택 (1~4): "))
+            show_wrong = input("오답 개수를 표시할까요? (y/n): ").strip().lower() == 'y'
+            grade_by_mode(user_answers, correct_answers, version, mode, show_wrong)
+        except:
+            print("⚠️ 잘못된 입력입니다.")
+
+        if input("\n계속하시겠습니까? (y/n): ").strip().lower() != 'y':
+            break
+
+if __name__ == "__main__":
+    main()

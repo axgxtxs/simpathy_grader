@@ -1,8 +1,8 @@
-import json
-import os
+import streamlit as st
 from datetime import datetime, timedelta
 
-# Categories with daily limits (in minutes)
+# --- Setup ---
+
 REFERENCE_TIMES = {
     "games": 60,
     "entertainment": 90,
@@ -10,156 +10,105 @@ REFERENCE_TIMES = {
     "SNS": 90
 }
 
-# Weekly limits: 7 times the daily limits
-WEEKLY_LIMITS = {
-    category: REFERENCE_TIMES[category] * 7
-    for category in REFERENCE_TIMES
-}
-
-# All categories (some with no limit)
+WEEKLY_LIMITS = {cat: REFERENCE_TIMES[cat] * 7 for cat in REFERENCE_TIMES}
 ALL_CATEGORIES = ["education", "games", "entertainment", "YouTube", "SNS", "message"]
 
-# File to save usage data
-DATA_FILE = "usage_data.json"
+if "usage_history" not in st.session_state:
+    st.session_state.usage_history = {}
 
-# Dictionary to store user input data by date
-usage_history = {}
+# --- Helper Functions ---
 
-# Load data from file
-def load_data():
-    global usage_history
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r") as f:
-            usage_history = json.load(f)
+def enter_usage(date, input_data):
+    history = st.session_state.usage_history
+    if date not in history:
+        history[date] = {}
+    for cat in ALL_CATEGORIES:
+        history[date][cat] = input_data.get(cat, 0)
 
-# Save data to file
-def save_data():
-    with open(DATA_FILE, "w") as f:
-        json.dump(usage_history, f)
-
-# Function to enter usage time per category
-def enter_usage():
-    date = input("Enter date (YYYY-MM-DD) or press Enter for today: ").strip()
-    if not date:
-        date = datetime.now().strftime("%Y-%m-%d")
-
-    if date not in usage_history:
-        usage_history[date] = {}
-
-    print(f"\nEntering usage for {date}:")
-    for category in ALL_CATEGORIES:
-        try:
-            minutes = int(input(f"  {category.capitalize()} usage (min): "))
-            usage_history[date][category] = minutes
-        except ValueError:
-            print("  ❌ Invalid input. Please enter a number.")
-            usage_history[date][category] = 0
-
-    save_data()  # Save after each entry
-
-# Function to check if user exceeded daily time limits
-def check_warnings(date):
-    print(f"\n🔍 Checking usage for {date}:")
-    for category in ALL_CATEGORIES:
-        used = usage_history[date].get(category, 0)
-        if category in REFERENCE_TIMES:
-            limit = REFERENCE_TIMES[category]
-            if used > limit:
-                print(f"⚠️ {category}: {used} min (limit: {limit}) — Overuse!")
-            else:
-                print(f"✅ {category}: {used} min (limit: {limit})")
-        else:
-            print(f"ℹ️ {category}: {used} min (no time limit)")
-
-# Function to show all daily entries
-def summary():
-    print("\n📊 Daily Usage Summary:")
-    for date in sorted(usage_history.keys()):
-        print(f"  {date}:")
-        for category, minutes in usage_history[date].items():
-            print(f"    {category}: {minutes} min")
-
-# Function to show weekly summary and check against limits
-def weekly_summary():
+def get_week_dates():
     today = datetime.now()
-    start_of_week = today - timedelta(days=today.weekday())  # Monday
+    start = today - timedelta(days=today.weekday())  # Monday
+    return [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
 
-    weekly_total = {cat: 0 for cat in ALL_CATEGORIES}
-
-    for date_str in usage_history:
-        try:
-            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-        except ValueError:
-            continue  # Skip malformed date entries
-        if start_of_week <= date_obj <= today:
-            for category in ALL_CATEGORIES:
-                weekly_total[category] += usage_history[date_str].get(category, 0)
-
-    print("\n📅 Weekly Usage Summary (This Week):")
-    for category in ALL_CATEGORIES:
-        used = weekly_total[category]
-        if category in WEEKLY_LIMITS:
-            limit = WEEKLY_LIMITS[category]
-            if used > limit:
-                print(f"⚠️ {category}: {used} min (limit: {limit}) — Overuse!")
-            else:
-                print(f"✅ {category}: {used} min (limit: {limit})")
-        else:
-            print(f"ℹ️ {category}: {used} min (no weekly limit)")
-
-# Function to display 7-day calendar sheet
-def calendar_sheet():
-    print("\n📆 Weekly Calendar Sheet (Last 7 Days)\n")
+def get_last_7_days():
     today = datetime.now()
-    last_7_days = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6, -1, -1)]
+    return [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6, -1, -1)]
 
-    # Header
-    header = f"{'Date':<12} | " + " | ".join(f"{cat[:4]:>4}" for cat in ALL_CATEGORIES)
-    print(header)
-    print("-" * len(header))
+# --- UI ---
 
-    # Each row: a day of data
+st.title("📱 Mobile Time Manager")
+
+tab1, tab2, tab3, tab4 = st.tabs(["📅 Weekly Calendar", "📝 Enter Usage", "📊 Daily Summary", "📈 Weekly Summary"])
+
+# --- Tab 1: Weekly Calendar ---
+with tab1:
+    st.header("📆 Weekly Calendar Sheet (Last 7 Days)")
+    last_7_days = get_last_7_days()
+
+    table = []
     for date in last_7_days:
-        row = f"{date:<12} | "
-        for category in ALL_CATEGORIES:
-            value = usage_history.get(date, {}).get(category, 0)
-            row += f"{value:>4} | "
-        print(row)
+        row = [date]
+        for cat in ALL_CATEGORIES:
+            value = st.session_state.usage_history.get(date, {}).get(cat, 0)
+            row.append(value)
+        table.append(row)
 
-# Main function for menu system
-def main():
-    load_data()  # Load saved data at startup
+    st.table(
+        [["Date"] + ALL_CATEGORIES] + table
+    )
 
-    while True:
-        print("\n--- 📱 Mobile Time Manager ---")
-        print("1. 📆 Show weekly calendar sheet")
-        print("2. 📝 Enter daily usage")
-        print("3. ⚠️ Check today's warnings")
-        print("4. 📊 Show daily summary")
-        print("5. 📅 Show weekly summary")
-        print("6. ❌ Exit")
-        choice = input("Select an option: ")
+# --- Tab 2: Enter Usage ---
+with tab2:
+    st.header("📝 Enter Daily Usage")
 
-        if choice == "1":
-            calendar_sheet()
-        elif choice == "2":
-            enter_usage()
-        elif choice == "3":
-            today = datetime.now().strftime("%Y-%m-%d")
-            if today in usage_history:
-                check_warnings(today)
+    date = st.date_input("Select a date", value=datetime.now()).strftime("%Y-%m-%d")
+
+    input_minutes = {}
+    for cat in ALL_CATEGORIES:
+        input_minutes[cat] = st.number_input(f"{cat.capitalize()} (min)", min_value=0, value=0, step=5)
+
+    if st.button("💾 Save Usage"):
+        enter_usage(date, input_minutes)
+        st.success(f"Saved usage for {date}.")
+
+# --- Tab 3: Daily Summary ---
+with tab3:
+    st.header("📊 Daily Summary")
+
+    if not st.session_state.usage_history:
+        st.info("No usage data entered yet.")
+    else:
+        for date in sorted(st.session_state.usage_history.keys()):
+            st.subheader(f"📅 {date}")
+            for cat, min_used in st.session_state.usage_history[date].items():
+                if cat in REFERENCE_TIMES:
+                    limit = REFERENCE_TIMES[cat]
+                    if min_used > limit:
+                        st.warning(f"⚠️ {cat}: {min_used} min (limit: {limit}) — Overuse!")
+                    else:
+                        st.success(f"{cat}: {min_used} min (limit: {limit})")
+                else:
+                    st.info(f"{cat}: {min_used} min (no limit)")
+
+# --- Tab 4: Weekly Summary ---
+with tab4:
+    st.header("📈 Weekly Summary (This Week)")
+
+    week_dates = get_week_dates()
+    totals = {cat: 0 for cat in ALL_CATEGORIES}
+
+    for date in week_dates:
+        daily_data = st.session_state.usage_history.get(date, {})
+        for cat in ALL_CATEGORIES:
+            totals[cat] += daily_data.get(cat, 0)
+
+    for cat in ALL_CATEGORIES:
+        used = totals[cat]
+        if cat in WEEKLY_LIMITS:
+            limit = WEEKLY_LIMITS[cat]
+            if used > limit:
+                st.warning(f"⚠️ {cat}: {used} min (limit: {limit}) — Overuse!")
             else:
-                print("❗ No usage entered for today.")
-        elif choice == "4":
-            summary()
-        elif choice == "5":
-            weekly_summary()
-        elif choice == "6":
-            print("👋 Goodbye!")
-            break
+                st.success(f"{cat}: {used} min (limit: {limit})")
         else:
-            print("❌ Invalid choice. Please try again.")
-
-# Run the program
-if __name__ == "__main__":
-    main()
+            st.info(f"{cat}: {used} min (no weekly limit)")
